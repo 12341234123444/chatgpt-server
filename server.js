@@ -2,42 +2,40 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const { OpenAI } = require('openai');
+const axios = require('axios');
 
 dotenv.config();
 
 const app = express();
-
-// Enable CORS for all origins (you can restrict later)
 app.use(cors());
-
-// Parse incoming JSON
 app.use(bodyParser.json());
-
-// OpenAI setup using latest SDK
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Root route for browser check
 app.get('/', (req, res) => {
-  res.send('✅ ChatGPT server is up and running!');
+  res.send('✅ Chatbot server is up and running with Hugging Face!');
 });
 
-// Chat endpoint
+// Chat endpoint using Hugging Face Inference API
 app.post('/chat', async (req, res) => {
   try {
     const userMessage = req.body.message;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: userMessage }],
-    });
+    const response = await axios.post(
+      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1',
+      {
+        inputs: userMessage,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        },
+      }
+    );
 
-    const reply = response.choices[0].message.content;
+    const reply = response.data?.[0]?.generated_text || 'No response';
     res.json({ reply });
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+    console.error('Hugging Face error:', error.response?.data || error.message);
     res.status(500).json({ error: 'Something went wrong.' });
   }
 });
