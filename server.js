@@ -21,10 +21,8 @@ app.post('/chat', async (req, res) => {
     const userMessage = req.body.message;
 
     const response = await axios.post(
-      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1',
-      {
-        inputs: userMessage,
-      },
+      'https://api-inference.huggingface.co/models/google/flan-t5-small',
+      { inputs: userMessage },
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -32,7 +30,12 @@ app.post('/chat', async (req, res) => {
       }
     );
 
-    const reply = response.data?.generated_text || response.data?.[0]?.generated_text || 'No response';
+    // Handle both possible response formats
+    const reply =
+      response.data?.generated_text ||
+      response.data?.[0]?.generated_text ||
+      'No response';
+
     res.json({ reply });
   } catch (error) {
     console.error('Hugging Face error:', error.response?.data || error.message);
